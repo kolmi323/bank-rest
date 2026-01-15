@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="create_card_requests" author="kolmi (generated)">
+        <createTable tableName="card_requests">
+            <column name="id" type="serial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="card_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="request_type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="request_status" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="date_create" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="card_id"
+                                 baseTableName="card_requests"
+                                 constraintName="fk_card_requests"
+                                 referencedColumnNames="id"
+                                 referencedTableName="cards"/>
+    </changeSet>
+</databaseChangeLog>
