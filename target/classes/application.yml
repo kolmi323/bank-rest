@@ -1,5 +1,10 @@
 server:
   port: 4040
+
+jwt:
+  secret: f5b731cd90578a6aef97a502208e2888338a304264335e601643b1f9705fb3cc
+  lifetime: 30m
+
 spring:
   application:
     name: bank

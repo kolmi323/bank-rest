@@ -18,7 +18,7 @@ public class CardRequestResponse {
     Integer id;
 
     @JsonProperty("card_number")
-    String cardNumber; // todo маскирование
+    String cardNumber;
 
     @JsonProperty("request_type")
     @JsonFormat(shape = JsonFormat.Shape.STRING)

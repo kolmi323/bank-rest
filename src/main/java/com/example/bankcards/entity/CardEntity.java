@@ -1,5 +1,6 @@
 package com.example.bankcards.entity;
 
+import com.example.bankcards.util.CardNumberEncryptor;
 import com.example.bankcards.util.CardStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,6 +25,7 @@ public class CardEntity {
     Integer userId;
 
     @Column(name = "number", nullable = false)
+            @Convert(converter = CardNumberEncryptor.class)
     String number;
 
     @Column(name = "valid_period", nullable = false)

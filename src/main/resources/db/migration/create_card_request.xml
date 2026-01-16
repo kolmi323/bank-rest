@@ -32,6 +32,7 @@
                                  baseTableName="card_requests"
                                  constraintName="fk_card_requests"
                                  referencedColumnNames="id"
-                                 referencedTableName="cards"/>
+                                 referencedTableName="cards"
+                                 onDelete="CASCADE"/>
     </changeSet>
 </databaseChangeLog>

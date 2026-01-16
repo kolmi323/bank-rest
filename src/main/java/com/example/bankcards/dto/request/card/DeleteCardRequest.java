@@ -1,0 +1,19 @@
+package com.example.bankcards.dto.request.card;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.experimental.FieldDefaults;
+
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class DeleteCardRequest {
+    @JsonProperty("user_id")
+    @NotNull
+    Integer userId;
+
+    @JsonProperty("card_id")
+    @NotNull
+    Integer cardId;
+}

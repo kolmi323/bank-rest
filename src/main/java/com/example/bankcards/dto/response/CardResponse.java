@@ -20,7 +20,7 @@ public class CardResponse {
     @JsonProperty("user_id")
     Integer userId;
 
-    String number; // todo маскирование
+    String number;
 
     @JsonProperty("valid_period")
     LocalDate date;

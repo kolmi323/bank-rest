@@ -1,8 +1,9 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.response.CardResponse;
-import com.example.bankcards.dto.request.CreateCardRequest;
+import com.example.bankcards.dto.request.card.CreateCardRequest;
 import com.example.bankcards.entity.CardEntity;
+import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.util.CardStatus;
 import com.example.bankcards.util.converter.CardEntityToCardResponseConverter;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -34,27 +37,49 @@ public class CardService {
         return converter.convert(cardRepository.save(card));
     }
 
-    public Page<CardResponse> getPageByUserId(Integer userId, int page, int size) {
+    public Page<CardResponse> getPage(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return cardRepository.findAll(pageable).map(converter::convert);
+    }
+
+    public Page<CardResponse> getPageByUserId(int userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return cardRepository.findAllByUserId(userId, pageable).map(converter::convert);
     }
 
-    public Page<CardResponse> getPageByUserIdAndStatus(Integer userId, CardStatus status, int page, int size) {
+    public Page<CardResponse> getPageByUserIdAndStatus(int userId, CardStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return cardRepository.findAllByUserIdAndStatus(userId, status, pageable).map(converter::convert);
     }
 
-    public BigDecimal getCardBalanceByIdAndUserId(Integer cardId, Integer userId) {
+    public Page<CardResponse> getPageByStatus(CardStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return cardRepository.findAllByStatus(status, pageable).map(converter::convert);
+    }
+
+    public BigDecimal getBalanceByIdAndUserId(int cardId, int userId) {
         return cardRepository.findByIdAndUserId(cardId, userId).getBalance();
     }
 
+    @Transactional
+    public void deleteByIdAndUserId(int cardId, int userId) {
+        int countModifiedRecords = cardRepository.deleteByIdAndUserId(cardId, userId);
+        if (countModifiedRecords == 0) {
+            throw new NotFoundException(String.format("Карта %d пользователя %d не найдена", cardId, userId));
+        } else if (countModifiedRecords > 1) {
+            throw new IllegalArgumentException(String.format("Удаление карты %d пользователя %d провалено", cardId, userId));
+        }
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public void updateFromCard(int userId, int fromCardId, BigDecimal amount) {
         CardEntity card = cardRepository.findByIdAndUserIdAndBalanceIsGreaterThanEqual(fromCardId, userId, amount);
         card.setBalance(card.getBalance().subtract(amount));
         cardRepository.save(card);
     }
 
-    public void updateToAccount(int userId, int toCardId, BigDecimal amount) {
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateToCard(int userId, int toCardId, BigDecimal amount) {
         CardEntity card = cardRepository.findByIdAndUserId(toCardId, userId);
         card.setBalance(card.getBalance().add(amount));
         cardRepository.save(card);

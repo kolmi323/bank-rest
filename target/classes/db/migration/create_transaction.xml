@@ -10,10 +10,10 @@
                 <constraints unique="true" nullable="false" primaryKey="true"/>
             </column>
             <column name="from_card_id" type="int">
-                <constraints nullable="true"/>
+                <constraints nullable="false"/>
             </column>
             <column name="to_card_id" type="int">
-                <constraints nullable="true"/>
+                <constraints nullable="false"/>
             </column>
             <column name="amount" type="decimal(20,2)">
                 <constraints nullable="false"/>

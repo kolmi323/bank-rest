@@ -10,4 +10,6 @@
     <include file="create_transaction.xml" relativeToChangelogFile="true"/>
     <include file="create_user_role.xml" relativeToChangelogFile="true"/>
     <include file="create_card_request.xml" relativeToChangelogFile="true"/>
+
+    <include file="create_super_user.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

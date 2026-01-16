@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Repository
 public interface CardRepository extends JpaRepository<CardEntity, Integer> {
     Page<CardEntity> findAllByUserId(Integer userId, Pageable pageable);
+    Page<CardEntity> findAllByStatus(CardStatus status, Pageable pageable);
     Page<CardEntity> findAllByUserIdAndStatus(Integer userId, CardStatus status, Pageable pageable);
     CardEntity findByIdAndUserId(Integer id, Integer userId);
     Integer deleteByIdAndUserId(Integer id, Integer userId);

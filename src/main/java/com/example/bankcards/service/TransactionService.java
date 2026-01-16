@@ -1,6 +1,6 @@
 package com.example.bankcards.service;
 
-import com.example.bankcards.dto.request.CreateTransactionRequest;
+import com.example.bankcards.dto.request.card.CreateTransactionRequest;
 import com.example.bankcards.dto.response.TransactionResponse;
 import com.example.bankcards.entity.TransactionEntity;
 import com.example.bankcards.repository.TransactionRepository;
@@ -27,9 +27,9 @@ public class TransactionService {
         return insert(request, userId);
     }
 
-    private TransactionResponse insert(CreateTransactionRequest request, Integer userId) {
+    private TransactionResponse insert(CreateTransactionRequest request, int userId) {
         cardService.updateFromCard(userId, request.getFromCardId(), request.getAmount());
-        cardService.updateToAccount(userId, request.getToCardId(), request.getAmount());
+        cardService.updateToCard(userId, request.getToCardId(), request.getAmount());
         TransactionEntity transaction = new TransactionEntity();
         transaction.setFromCardId(request.getFromCardId());
         transaction.setToCardId(request.getToCardId());
