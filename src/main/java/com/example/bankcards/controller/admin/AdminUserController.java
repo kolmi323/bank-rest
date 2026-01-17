@@ -1,12 +1,12 @@
 package com.example.bankcards.controller.admin;
 
-import com.example.bankcards.controller.ApiController;
 import com.example.bankcards.dto.request.user.ChangeRoleRequest;
 import com.example.bankcards.dto.request.user.DeleteUserRequest;
 import com.example.bankcards.dto.response.UserResponse;
 import com.example.bankcards.security.CustomUserDetails;
 import com.example.bankcards.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/bank/admin/user")
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
-public class AdminUserController extends ApiController {
+public class AdminUserController {
     UserService userService;
 
     @PostMapping("/grant")
@@ -37,7 +37,7 @@ public class AdminUserController extends ApiController {
         return userService.revokeRole(userDetails.getId(), request);
     }
 
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public void deleteUser(
             @RequestBody @Valid DeleteUserRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -47,8 +47,8 @@ public class AdminUserController extends ApiController {
 
     @GetMapping("/view")
     public Page<UserResponse> viewUser(
-            @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "10") int size
+            @Min(0) @RequestParam(required = false, defaultValue = "0") int page,
+            @Min(1) @RequestParam(required = false, defaultValue = "10") int size
     ) {
         return userService.getAllUsers(page, size);
     }

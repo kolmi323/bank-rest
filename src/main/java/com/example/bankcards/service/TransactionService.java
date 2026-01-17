@@ -3,6 +3,7 @@ package com.example.bankcards.service;
 import com.example.bankcards.dto.request.card.CreateTransactionRequest;
 import com.example.bankcards.dto.response.TransactionResponse;
 import com.example.bankcards.entity.TransactionEntity;
+import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.repository.TransactionRepository;
 import com.example.bankcards.util.converter.TransactionEntityToTransactionResponseConverter;
 import lombok.AccessLevel;
@@ -23,7 +24,7 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse create(CreateTransactionRequest request, Integer userId) {
-        //todo методы валидации
+        validateCards(request.getFromCardId(), request.getToCardId());
         return insert(request, userId);
     }
 
@@ -36,5 +37,11 @@ public class TransactionService {
         transaction.setAmount(request.getAmount());
         transaction.setDate(LocalDateTime.now());
         return converter.convert(transactionRepository.save(transaction));
+    }
+
+    private void validateCards (int fromCardId, int toCardId) {
+        if (fromCardId == toCardId) {
+            throw new BadRequestException("Недопустимая операция: идентификарторы карт одинаковы");
+        }
     }
 }

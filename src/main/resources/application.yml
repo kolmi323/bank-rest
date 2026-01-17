@@ -11,9 +11,9 @@ spring:
   liquibase:
     change-log: classpath:db/migration/liquibase.xml
   datasource:
-    url: jdbc:postgresql://localhost:5432/bank
-    username: postgres
-    password: postgres
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: none

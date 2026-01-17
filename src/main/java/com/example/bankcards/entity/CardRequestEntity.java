@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 @EqualsAndHashCode(of = "id")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@NoArgsConstructor()
+@NoArgsConstructor
 public class CardRequestEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

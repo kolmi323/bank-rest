@@ -1,16 +1,18 @@
 package com.example.bankcards.service;
 
-import com.example.bankcards.dto.response.CardResponse;
 import com.example.bankcards.dto.request.card.CreateCardRequest;
+import com.example.bankcards.dto.response.BalanceCardResponse;
+import com.example.bankcards.dto.response.CardResponse;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.exception.NotFoundException;
+import com.example.bankcards.exception.SqlOperationException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.util.CardStatus;
+import com.example.bankcards.util.FakerUtils;
 import com.example.bankcards.util.converter.CardEntityToCardResponseConverter;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import net.datafaker.Faker;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,11 +28,12 @@ import java.math.BigDecimal;
 public class CardService {
     CardRepository cardRepository;
     CardEntityToCardResponseConverter converter;
+    FakerUtils fakerUtils;
 
     public CardResponse create(CreateCardRequest createCardRequest) {
         CardEntity card = new CardEntity();
         card.setUserId(createCardRequest.getUserId());
-        card.setNumber(generateCardNumber());
+        card.setNumber(createCardNumber());
         card.setDate(createCardRequest.getValidPeriod());
         card.setStatus(CardStatus.ACTIVE);
         card.setBalance(createCardRequest.getBalance());
@@ -57,39 +60,54 @@ public class CardService {
         return cardRepository.findAllByStatus(status, pageable).map(converter::convert);
     }
 
-    public BigDecimal getBalanceByIdAndUserId(int cardId, int userId) {
-        return cardRepository.findByIdAndUserId(cardId, userId).getBalance();
+    public BalanceCardResponse getBalanceByIdAndUserId(int cardId, int userId) {
+        return new BalanceCardResponse(handleCardByIdAndUserId(cardId, userId).getBalance());
     }
 
-    @Transactional
+    @Transactional(rollbackFor = {NotFoundException.class, IllegalArgumentException.class})
     public void deleteByIdAndUserId(int cardId, int userId) {
         int countModifiedRecords = cardRepository.deleteByIdAndUserId(cardId, userId);
         if (countModifiedRecords == 0) {
             throw new NotFoundException(String.format("Карта %d пользователя %d не найдена", cardId, userId));
         } else if (countModifiedRecords > 1) {
-            throw new IllegalArgumentException(String.format("Удаление карты %d пользователя %d провалено", cardId, userId));
+            throw new SqlOperationException(String.format("Удаление карты %d пользователя %d провалено", cardId, userId));
         }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateFromCard(int userId, int fromCardId, BigDecimal amount) {
-        CardEntity card = cardRepository.findByIdAndUserIdAndBalanceIsGreaterThanEqual(fromCardId, userId, amount);
+        CardEntity card = handleCardByIdAndUserIdAndBalanceIsGreaterThanEqual(fromCardId, userId, amount);
         card.setBalance(card.getBalance().subtract(amount));
         cardRepository.save(card);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateToCard(int userId, int toCardId, BigDecimal amount) {
-        CardEntity card = cardRepository.findByIdAndUserId(toCardId, userId);
+        CardEntity card = handleCardByIdAndUserId(toCardId, userId);
         card.setBalance(card.getBalance().add(amount));
         cardRepository.save(card);
     }
 
-    private String generateCardNumber() {
-        Faker faker = new Faker();
-        String number = faker.finance().creditCard();
+    public CardEntity handleCardByIdAndUserId(int id, int userId) {
+        return cardRepository.findByIdAndUserId(id, userId).orElseThrow(
+                () -> new NotFoundException(String.format(
+                        "Карты <%d> для пользователя <%d> не существует", id, userId)
+                )
+        );
+    }
+
+    public CardEntity handleCardByIdAndUserIdAndBalanceIsGreaterThanEqual(int id, int userId, BigDecimal amount) {
+        return cardRepository.findByIdAndUserIdAndBalanceIsGreaterThanEqual(id, userId, amount).orElseThrow(
+                () -> new NotFoundException(
+                        String.format("Карты <%d> для пользователя <%d> c необходимым балансом не найдена", id, userId)
+                )
+        );
+    }
+
+    private String createCardNumber() {
+        String number = fakerUtils.generateCardNumber();
         while(cardRepository.existsByNumber(number)) {
-            number = faker.finance().creditCard();
+            number = fakerUtils.generateCardNumber();
         }
         return number;
     }

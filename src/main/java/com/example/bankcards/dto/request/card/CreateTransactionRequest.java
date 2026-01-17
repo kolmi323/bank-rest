@@ -12,9 +12,13 @@ import java.math.BigDecimal;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateTransactionRequest {
     @JsonProperty("from_card_id")
+    @NotNull
+    @Min(1)
     Integer fromCardId;
 
     @JsonProperty("to_card_id")
+    @NotNull
+    @Min(1)
     Integer toCardId;
 
     @Digits(integer = 20, fraction = 2)

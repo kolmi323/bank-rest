@@ -14,6 +14,7 @@ import java.time.LocalDate;
 public class CreateCardRequest {
     @JsonProperty("user_id")
     @NotNull
+    @Min(1)
     Integer userId;
 
     @JsonProperty("valid_period")

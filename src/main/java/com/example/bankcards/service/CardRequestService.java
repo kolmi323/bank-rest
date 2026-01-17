@@ -1,10 +1,11 @@
 package com.example.bankcards.service;
 
+import com.example.bankcards.dto.request.req.CreateCardReqRequest;
 import com.example.bankcards.dto.response.CardRequestResponse;
-import com.example.bankcards.dto.request.request.CreateCardReqRequest;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.entity.CardRequestEntity;
-import com.example.bankcards.repository.CardRepository;
+import com.example.bankcards.exception.BadRequestException;
+import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.CardRequestRepository;
 import com.example.bankcards.util.CardStatus;
 import com.example.bankcards.util.RequestStatus;
@@ -20,28 +21,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
 public class CardRequestService {
     CardRequestRepository cardRequestRepository;
-    CardRepository cardRepository;
+    CardService cardService;
     CardRequestEntityToCardRequestResponseConverter converter;
 
     public CardRequestResponse createRequestForChangeStatusCard(CreateCardReqRequest request, int userId) {
-        CardEntity card = cardRepository.findByIdAndUserId(request.getCardId(), userId);
+        CardEntity card = cardService.handleCardByIdAndUserId(request.getCardId(), userId);
         if (checkCorrectStatusRequest(card.getStatus(), request.getRequestType())) {
             CardRequestEntity cardRequest = new CardRequestEntity();
             cardRequest.setCard(card);
             cardRequest.setRequestType(request.getRequestType());
             cardRequest.setRequestStatus(RequestStatus.WAITING);
             cardRequest.setDateCreate(LocalDateTime.now());
-            CardRequestResponse cardRequestResponse = converter.convert(cardRequestRepository.save(cardRequest));
-            return cardRequestResponse;
+            return converter.convert(cardRequestRepository.save(cardRequest));
         } else {
-            throw new IllegalArgumentException("Такое изменение статуса невозможно");
+            throw new BadRequestException("Такое изменение статуса невозможно");
         }
     }
 
@@ -73,32 +72,32 @@ public class CardRequestService {
 
     @Transactional
     public CardRequestResponse acceptRequest(int requestId) {
-        Optional<CardRequestEntity> cardRequest = cardRequestRepository.findById(requestId);
-        if (cardRequest.isPresent() && cardRequest.get().getRequestStatus() == RequestStatus.WAITING) {
-            CardRequestEntity request = cardRequest.get();
-            if (request.getRequestType() == RequestType.BLOCK) {
-                request.getCard().setStatus(CardStatus.BLOCK);
-                request.setRequestStatus(RequestStatus.ACCEPTED);
-            } else if (request.getRequestType() == RequestType.UNBLOCK) {
-                request.getCard().setStatus(CardStatus.ACTIVE);
-                request.setRequestStatus(RequestStatus.ACCEPTED);
+        CardRequestEntity cardRequest = handleCardRequestById(requestId);
+        if (cardRequest.getRequestStatus() == RequestStatus.WAITING) {
+            if (cardRequest.getRequestType() == RequestType.BLOCK) {
+                cardRequest.getCard().setStatus(CardStatus.BLOCK);
+                cardRequest.setRequestStatus(RequestStatus.ACCEPTED);
+            } else if (cardRequest.getRequestType() == RequestType.UNBLOCK) {
+                cardRequest.getCard().setStatus(CardStatus.ACTIVE);
+                cardRequest.setRequestStatus(RequestStatus.ACCEPTED);
             }
-            return converter.convert(cardRequestRepository.save(request));
+            return converter.convert(cardRequestRepository.save(cardRequest));
         } else {
-            throw new IllegalArgumentException("Запрос некорректный");
+            throw new BadRequestException("Запрос некорректный");
         }
     }
 
     @Transactional
     public CardRequestResponse rejectRequest(int requestId) {
-        Optional<CardRequestEntity> cardRequest = cardRequestRepository.findById(requestId);
-        if (cardRequest.isPresent()) {
-            CardRequestEntity request = cardRequest.get();
-            request.setRequestStatus(RequestStatus.REJECTED);
-            return converter.convert(cardRequestRepository.save(request));
-        } else {
-            throw new IllegalArgumentException("Такого запроса не существует");
-        }
+        CardRequestEntity request = handleCardRequestById(requestId);
+        request.setRequestStatus(RequestStatus.REJECTED);
+        return converter.convert(cardRequestRepository.save(request));
+    }
+
+    public CardRequestEntity handleCardRequestById(int id) {
+        return cardRequestRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Такого запроса не существует")
+        );
     }
 
     private boolean checkCorrectStatusRequest(CardStatus cardStatus, RequestType requestType) {

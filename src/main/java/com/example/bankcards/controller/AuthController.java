@@ -16,17 +16,22 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/bank")
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
-public class AuthController extends ApiController {
+public class AuthController {
     AuthService authService;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse register(@RequestBody @Valid RegisterUserRequest request) {
+    public UserResponse register(
+            @RequestBody @Valid RegisterUserRequest request
+    ) {
+        Integer q = 1;
         return authService.registerNewUser(request);
     }
 
     @PostMapping("/login")
-    public JwtResponse login(@RequestBody @Valid LoginUserRequest loginUserRequest) {
+    public JwtResponse login(
+            @RequestBody @Valid LoginUserRequest loginUserRequest
+    ) {
         return authService.loginUser(loginUserRequest);
     }
 }

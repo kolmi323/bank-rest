@@ -3,9 +3,9 @@ package com.example.bankcards.util.converter;
 import com.example.bankcards.dto.response.UserResponse;
 import com.example.bankcards.entity.UserEntity;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 public class UserEntityToUserResponseConverter implements Converter<UserEntity, UserResponse> {
     @Override
     public UserResponse convert(UserEntity source) {

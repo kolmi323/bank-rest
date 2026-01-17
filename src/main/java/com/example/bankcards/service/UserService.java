@@ -4,6 +4,7 @@ import com.example.bankcards.dto.request.user.ChangeRoleRequest;
 import com.example.bankcards.dto.request.user.DeleteUserRequest;
 import com.example.bankcards.dto.response.UserResponse;
 import com.example.bankcards.entity.UserEntity;
+import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.UserRole;
@@ -14,7 +15,6 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,7 +35,7 @@ public class UserService {
         if (user.getRoles().add(UserRole.ADMIN)) {
             userRepository.save(user);
         } else {
-            throw new IllegalArgumentException("Права уже выданы");
+            throw new BadRequestException("Права уже выданы");
         }
         return converter.convert(user);
     }
@@ -46,7 +46,7 @@ public class UserService {
         if (user.getRoles().remove(UserRole.ADMIN)) {
             userRepository.save(user);
         } else {
-            throw new IllegalArgumentException("Пользователь не имеет роль админа");
+            throw new BadRequestException("Пользователь не имеет роль админа");
         }
         return converter.convert(user);
     }
@@ -55,7 +55,7 @@ public class UserService {
         validPossibilityChange(adminId, request.getId());
         UserEntity user = handleUserEntityById(request.getId());
         if (user.getRoles().contains(UserRole.ADMIN)) {
-            throw new IllegalArgumentException("Удаление админа невозможно");
+            throw new BadRequestException("Удаление админа невозможно");
         } else {
             userRepository.delete(user);
         }
@@ -74,7 +74,7 @@ public class UserService {
 
     private void validPossibilityChange(int requestUserId, int changeUserId) {
         if (requestUserId == changeUserId) {
-            throw new IllegalArgumentException("Запрос на изменение своих данных невозможен");
+            throw new BadRequestException("Запрос на изменение своих данных невозможен");
         }
     }
 }
