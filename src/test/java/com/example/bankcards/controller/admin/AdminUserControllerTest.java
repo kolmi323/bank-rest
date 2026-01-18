@@ -6,14 +6,13 @@ import com.example.bankcards.config.TestSecureConfiguration;
 import com.example.bankcards.controller.AbstractControllerTest;
 import com.example.bankcards.dto.request.user.ChangeRoleRequest;
 import com.example.bankcards.dto.request.user.DeleteUserRequest;
-import com.example.bankcards.dto.response.UserResponse;
+import com.example.bankcards.dto.response.user.UserResponse;
 import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.UserService;
 import com.example.bankcards.util.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
@@ -74,7 +73,7 @@ class AdminUserControllerTest extends AbstractControllerTest {
 
     @Test
     public void grantRole_return400_whenServiceThrowsException() throws Exception {
-        doThrow(new BadRequestException("Cannot change own role"))
+        doThrow(new BadRequestException("Права уже выданы"))
                 .when(userService).grantRole(USER_ID, changeRoleRequest);
 
         mockMvc.perform(post("/bank/admin/user/grant")

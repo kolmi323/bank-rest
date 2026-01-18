@@ -4,12 +4,13 @@ import com.example.bankcards.config.SecurityConfiguration;
 import com.example.bankcards.config.TestConfig;
 import com.example.bankcards.config.TestSecureConfiguration;
 import com.example.bankcards.controller.AbstractControllerTest;
-import com.example.bankcards.dto.request.card.CreateTransactionRequest;
+import com.example.bankcards.dto.request.req.CreateTransactionRequest;
 import com.example.bankcards.dto.request.req.CreateCardReqRequest;
-import com.example.bankcards.dto.response.BalanceCardResponse;
-import com.example.bankcards.dto.response.CardRequestResponse;
-import com.example.bankcards.dto.response.CardResponse;
-import com.example.bankcards.dto.response.TransactionResponse;
+import com.example.bankcards.dto.response.card.BalanceCardResponse;
+import com.example.bankcards.dto.response.request.CardRequestResponse;
+import com.example.bankcards.dto.response.card.CardResponse;
+import com.example.bankcards.dto.response.card.TransactionResponse;
+import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.CardRequestService;
 import com.example.bankcards.service.CardService;
@@ -18,7 +19,6 @@ import com.example.bankcards.util.CardStatus;
 import com.example.bankcards.util.RequestStatus;
 import com.example.bankcards.util.RequestType;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -160,6 +161,20 @@ class UserCardControllerTest extends AbstractControllerTest {
                         .param("id", String.valueOf(cardId)))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectWriter.writeValueAsString(response)));
+    }
+
+    @Test
+    public void getBalanceCard_return404_whenCardNotFound() throws Exception {
+        int cardId = 2;
+
+        doThrow(new NotFoundException(String.format(
+                "Карты <%d> для пользователя <%d> не существует", cardId, USER_ID)))
+                .when(cardService).getBalanceByIdAndUserId(cardId, USER_ID);
+
+        mockMvc.perform(get("/bank/user/card/balance")
+                        .with(authentication(authentication))
+                        .param("id", String.valueOf(cardId)))
+                .andExpect(status().isNotFound());
     }
 
     @Test

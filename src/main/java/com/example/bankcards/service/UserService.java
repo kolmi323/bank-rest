@@ -2,7 +2,7 @@ package com.example.bankcards.service;
 
 import com.example.bankcards.dto.request.user.ChangeRoleRequest;
 import com.example.bankcards.dto.request.user.DeleteUserRequest;
-import com.example.bankcards.dto.response.UserResponse;
+import com.example.bankcards.dto.response.user.UserResponse;
 import com.example.bankcards.entity.UserEntity;
 import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.exception.NotFoundException;

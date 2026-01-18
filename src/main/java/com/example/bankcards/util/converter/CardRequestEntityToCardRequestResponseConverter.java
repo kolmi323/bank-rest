@@ -1,6 +1,6 @@
 package com.example.bankcards.util.converter;
 
-import com.example.bankcards.dto.response.CardRequestResponse;
+import com.example.bankcards.dto.response.request.CardRequestResponse;
 import com.example.bankcards.entity.CardRequestEntity;
 import com.example.bankcards.util.CardUtils;
 import lombok.AccessLevel;

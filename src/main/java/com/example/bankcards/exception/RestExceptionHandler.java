@@ -15,13 +15,6 @@ import java.util.Date;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
-    @ExceptionHandler(SqlOperationException.class)
-    public ResponseEntity<ErrorResponse> handleSqlOperationException(SqlOperationException e){
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(e.getMessage(), new Date()));
-    }
-
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException e) {
         if (e.getSQLState().equals("23505")) {
@@ -79,6 +72,13 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(NumberEncryptorException.class)
     public ResponseEntity<ErrorResponse> handleNumberEncryptorException(NumberEncryptorException e) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(e.getMessage(), new Date()));
+    }
+
+    @ExceptionHandler(SqlOperationException.class)
+    public ResponseEntity<ErrorResponse> handleSqlOperationException(SqlOperationException e){
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse(e.getMessage(), new Date()));

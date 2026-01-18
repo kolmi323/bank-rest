@@ -1,7 +1,7 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.request.req.CreateCardReqRequest;
-import com.example.bankcards.dto.response.CardRequestResponse;
+import com.example.bankcards.dto.response.request.CardRequestResponse;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.entity.CardRequestEntity;
 import com.example.bankcards.exception.BadRequestException;
@@ -87,7 +87,6 @@ public class CardRequestService {
         }
     }
 
-    @Transactional
     public CardRequestResponse rejectRequest(int requestId) {
         CardRequestEntity request = handleCardRequestById(requestId);
         request.setRequestStatus(RequestStatus.REJECTED);

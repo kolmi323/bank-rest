@@ -1,8 +1,8 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.request.card.CreateCardRequest;
-import com.example.bankcards.dto.response.BalanceCardResponse;
-import com.example.bankcards.dto.response.CardResponse;
+import com.example.bankcards.dto.response.card.BalanceCardResponse;
+import com.example.bankcards.dto.response.card.CardResponse;
 import com.example.bankcards.entity.CardEntity;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.exception.SqlOperationException;

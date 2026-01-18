@@ -6,14 +6,13 @@ import com.example.bankcards.config.TestSecureConfiguration;
 import com.example.bankcards.controller.AbstractControllerTest;
 import com.example.bankcards.dto.request.card.CreateCardRequest;
 import com.example.bankcards.dto.request.card.DeleteCardRequest;
-import com.example.bankcards.dto.response.CardResponse;
+import com.example.bankcards.dto.response.card.CardResponse;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.CardService;
 import com.example.bankcards.util.CardStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
@@ -98,7 +97,8 @@ class AdminCardControllerTest extends AbstractControllerTest {
 
     @Test
     public void deleteCard_return400_whenServiceThrowsNotFound() throws Exception {
-        doThrow(new NotFoundException("Card not found"))
+        doThrow(new NotFoundException(String.format(
+                "Карты <%d> для пользователя <%d> не существует", cardResponse.getId(), USER_ID)))
                 .when(cardService).deleteByIdAndUserId(deleteCardRequest.getCardId(), deleteCardRequest.getUserId());
 
         mockMvc.perform(delete("/bank/admin/card/delete")

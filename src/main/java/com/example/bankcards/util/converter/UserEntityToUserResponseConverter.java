@@ -1,6 +1,6 @@
 package com.example.bankcards.util.converter;
 
-import com.example.bankcards.dto.response.UserResponse;
+import com.example.bankcards.dto.response.user.UserResponse;
 import com.example.bankcards.entity.UserEntity;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;

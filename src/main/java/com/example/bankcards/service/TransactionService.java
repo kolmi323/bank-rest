@@ -1,7 +1,7 @@
 package com.example.bankcards.service;
 
-import com.example.bankcards.dto.request.card.CreateTransactionRequest;
-import com.example.bankcards.dto.response.TransactionResponse;
+import com.example.bankcards.dto.request.req.CreateTransactionRequest;
+import com.example.bankcards.dto.response.card.TransactionResponse;
 import com.example.bankcards.entity.TransactionEntity;
 import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.repository.TransactionRepository;
