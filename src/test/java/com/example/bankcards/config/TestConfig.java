@@ -17,10 +17,6 @@ import org.springframework.context.annotation.Bean;
 @TestConfiguration
 public class TestConfig {
     @MockBean CardUtils cardUtils;
-    /*@MockBean UserService userService;
-    @MockBean CardService cardService;
-    @MockBean CardRequestService cardRequestService;
-    @MockBean TransactionService transactionService;*/
 
     @Bean
     public ObjectMapper objectMapper() {

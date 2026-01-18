@@ -7,6 +7,7 @@ import com.example.bankcards.controller.AbstractControllerTest;
 import com.example.bankcards.dto.request.req.ChangeCardReqRequest;
 import com.example.bankcards.dto.response.request.CardRequestResponse;
 import com.example.bankcards.exception.BadRequestException;
+import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.CardRequestService;
 import com.example.bankcards.util.RequestStatus;
@@ -39,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 )
 @Import({TestSecureConfiguration.class, TestConfig.class})
 class AdminRequestCardControllerTest extends AbstractControllerTest {
-    @MockBean private CardRequestService cardRequestService;
+    @MockBean
+    private CardRequestService cardRequestService;
 
     private ChangeCardReqRequest changeRequest;
     private CardRequestResponse responseAccepted;
@@ -77,14 +79,35 @@ class AdminRequestCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void acceptRequest_return400_whenServiceThrowsException() throws Exception {
-        doThrow(new BadRequestException("Request already processed"))
+    public void acceptRequest_return400_whenUnblockActiveCard() throws Exception {
+        doThrow(new BadRequestException("Запрос некорректный"))
                 .when(cardRequestService).acceptRequest(changeRequest.getRequestId());
 
         mockMvc.perform(post("/bank/admin/request/accept")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectWriter.writeValueAsString(changeRequest)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void acceptRequest_return400_whenInvalid() throws Exception {
+        ChangeCardReqRequest request = new ChangeCardReqRequest();
+
+        mockMvc.perform(post("/bank/admin/request/accept")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void acceptRequest_return404_whenCardRequestNotFound() throws Exception {
+        doThrow(new NotFoundException("Такого запроса не существует"))
+                .when(cardRequestService).acceptRequest(changeRequest.getRequestId());
+
+        mockMvc.perform(post("/bank/admin/request/accept")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(changeRequest)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -100,7 +123,28 @@ class AdminRequestCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void viewRequests_return200_withDefaultParams() throws Exception {
+    public void rejectRequest_return400_whenInvalid() throws Exception {
+        ChangeCardReqRequest request = new ChangeCardReqRequest();
+
+        mockMvc.perform(post("/bank/admin/request/reject")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void rejectRequest_return404_whenCardRequestNotFound() throws Exception {
+        doThrow(new NotFoundException("Такого запроса не существует"))
+                .when(cardRequestService).rejectRequest(changeRequest.getRequestId());
+
+        mockMvc.perform(post("/bank/admin/request/reject")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(changeRequest)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void viewRequests_return200_whenValid() throws Exception {
         when(cardRequestService.getPage(0, 10)).thenReturn(pageResponse);
 
         mockMvc.perform(get("/bank/admin/request/view")
@@ -110,42 +154,31 @@ class AdminRequestCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void filterRequestsByStatus_return200_withDefaultStatus() throws Exception {
+    public void filterRequestsByStatus_return200_whenValid() throws Exception {
         when(cardRequestService.getPageByRequestStatus(RequestStatus.WAITING, 0, 10))
                 .thenReturn(pageResponse);
 
         mockMvc.perform(get("/bank/admin/request/filter/status"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectWriter.writeValueAsString(pageResponse)));
     }
 
     @Test
-    public void filterRequestsByStatus_return200_withCustomStatus() throws Exception {
-        when(cardRequestService.getPageByRequestStatus(RequestStatus.ACCEPTED, 0, 10))
-                .thenReturn(pageResponse);
-
-        mockMvc.perform(get("/bank/admin/request/filter/status")
-                        .param("status", "ACCEPTED"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    public void filterRequestsByCardId_return200_withDefaultId() throws Exception {
-        when(cardRequestService.getPageByCardId(1, 0, 10))
-                .thenReturn(pageResponse);
-
-        mockMvc.perform(get("/bank/admin/request/filter/card"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    public void filterRequestsByCardId_return200_withCustomId() throws Exception {
-        int cardId = 1454414234;
+    public void filterRequestsByCardId_return200_whenValid() throws Exception {
+        int cardId = 123;
         when(cardRequestService.getPageByCardId(cardId, 0, 10))
                 .thenReturn(pageResponse);
 
         mockMvc.perform(get("/bank/admin/request/filter/card")
                         .param("card_id", String.valueOf(cardId)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectWriter.writeValueAsString(pageResponse)));
+    }
+
+    @Test
+    public void filterRequestsByCardId_return400_whenCardIdMissing() throws Exception {
+        mockMvc.perform(get("/bank/admin/request/filter/card"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -158,20 +191,6 @@ class AdminRequestCardControllerTest extends AbstractControllerTest {
                         .param("card_id", String.valueOf(cardId)))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectWriter.writeValueAsString(pageResponse)));
-    }
-
-    @Test
-    public void filterRequestsByCardIdAndStatus_return200_withAllParams() throws Exception {
-        int cardId = 21;
-        RequestStatus status = RequestStatus.REJECTED;
-
-        when(cardRequestService.getPageByCardIdAndRequestStatus(cardId, status, 0, 10))
-                .thenReturn(pageResponse);
-
-        mockMvc.perform(get("/bank/admin/request/filter/main")
-                        .param("card_id", String.valueOf(cardId))
-                        .param("status", status.name()))
-                .andExpect(status().isOk());
     }
 
     @Test

@@ -107,7 +107,7 @@ public class AdminRequestCardController {
             @Min(1) @RequestParam(required = false, defaultValue = "10") int size,
 
             @Parameter(description = "ID карты")
-            @RequestParam(required = false, defaultValue = "1", name = "card_id") int cardId
+            @RequestParam(name = "card_id") int cardId
     ) {
         return cardRequestService.getPageByCardId(cardId, page, size);
     }

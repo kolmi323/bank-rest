@@ -10,6 +10,7 @@ import com.example.bankcards.dto.response.card.BalanceCardResponse;
 import com.example.bankcards.dto.response.request.CardRequestResponse;
 import com.example.bankcards.dto.response.card.CardResponse;
 import com.example.bankcards.dto.response.card.TransactionResponse;
+import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.CardRequestService;
@@ -18,6 +19,7 @@ import com.example.bankcards.service.TransactionService;
 import com.example.bankcards.util.CardStatus;
 import com.example.bankcards.util.RequestStatus;
 import com.example.bankcards.util.RequestType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -49,27 +51,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 )
 @Import({TestSecureConfiguration.class, TestConfig.class})
 class UserCardControllerTest extends AbstractControllerTest {
-    @MockBean private CardService cardService;
-    @MockBean private CardRequestService cardRequestService;
-    @MockBean private TransactionService transactionService;
+    @MockBean
+    private CardService cardService;
+    @MockBean
+    private CardRequestService cardRequestService;
+    @MockBean
+    private TransactionService transactionService;
+
+    private CreateCardReqRequest createCardReqRequest;
+    private CreateTransactionRequest createTransactionRequest;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        super.setUp();
+
+        createCardReqRequest = new CreateCardReqRequest();
+        createCardReqRequest.setCardId(10);
+        createCardReqRequest.setRequestType(RequestType.BLOCK);
+
+        createTransactionRequest = new CreateTransactionRequest();
+        createTransactionRequest.setFromCardId(1);
+        createTransactionRequest.setToCardId(2);
+        createTransactionRequest.setAmount(new BigDecimal("100.50"));
+
+    }
 
     @Test
     public void createCardRequest_return201_whenValid() throws Exception {
-        CreateCardReqRequest request = new CreateCardReqRequest();
-        request.setCardId(10);
-        request.setRequestType(RequestType.BLOCK);
-
         CardRequestResponse response = new CardRequestResponse(
                 1, "**** **** **** 4444", RequestType.BLOCK, RequestStatus.WAITING, LocalDateTime.now()
         );
 
-        when(cardRequestService.createRequestForChangeStatusCard(request, USER_ID))
+        when(cardRequestService.createRequestForChangeStatusCard(createCardReqRequest, USER_ID))
                 .thenReturn(response);
 
         mockMvc.perform(post("/bank/user/card/status")
                         .with(authentication(authentication))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectWriter.writeValueAsString(request)))
+                        .content(objectWriter.writeValueAsString(createCardReqRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(content().json(objectMapper.writeValueAsString(response)));
     }
@@ -86,25 +105,72 @@ class UserCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void createTransaction_return201_whenValid() throws Exception {
-        CreateTransactionRequest request = new CreateTransactionRequest();
-        request.setFromCardId(1);
-        request.setToCardId(2);
-        request.setAmount(new BigDecimal("100.50"));
+    public void createCardRequest_return400_whenInvalidRequestType() throws Exception {
+        doThrow(new BadRequestException("Такое изменение статуса невозможно"))
+                .when(cardRequestService).createRequestForChangeStatusCard(createCardReqRequest, USER_ID);
 
+        mockMvc.perform(post("/bank/user/card/status")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(createCardReqRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void createTransaction_return201_whenValid() throws Exception {
         TransactionResponse response = new TransactionResponse(
                 1, 1, 20, new BigDecimal("100.50"), LocalDateTime.now()
         );
 
-        when(transactionService.create(request, USER_ID))
+        when(transactionService.create(createTransactionRequest, USER_ID))
                 .thenReturn(response);
 
         mockMvc.perform(post("/bank/user/card/transaction")
                         .with(authentication(authentication))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectWriter.writeValueAsString(request)))
+                        .content(objectWriter.writeValueAsString(createTransactionRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(content().json(objectWriter.writeValueAsString(response)));
+    }
+
+    @Test
+    public void createTransaction_return400_whenInvalidBody() throws Exception {
+        CreateTransactionRequest request = new CreateTransactionRequest();
+
+        mockMvc.perform(post("/bank/user/card/transaction")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void createTransaction_return400_whenSameId() throws Exception {
+        createTransactionRequest.setToCardId(1);
+
+        doThrow(new BadRequestException("Недопустимая операция: идентификарторы карт одинаковы"))
+                .when(transactionService).create(createTransactionRequest, USER_ID);
+
+        mockMvc.perform(post("/bank/user/card/transaction")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(createTransactionRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void createTransaction_return400_whenCardNotFound() throws Exception {
+        doThrow(
+                new NotFoundException(String.format(
+                        "Карты <%d> для пользователя <%d> не существует", createTransactionRequest.getToCardId(), USER_ID)
+                ))
+                .when(transactionService).create(createTransactionRequest, USER_ID);
+
+        mockMvc.perform(post("/bank/user/card/transaction")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(createTransactionRequest)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -120,20 +186,6 @@ class UserCardControllerTest extends AbstractControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectWriter.writeValueAsString(pageResponse)));
-    }
-
-    @Test
-    public void getCards_return200_withCustomParams() throws Exception {
-        Page<CardResponse> emptyPage = new PageImpl<>(Collections.emptyList());
-
-        when(cardService.getPageByUserId(USER_ID, 0, 10))
-                .thenReturn(emptyPage);
-
-        mockMvc.perform(get("/bank/user/card/view")
-                        .with(authentication(authentication))
-                        .param("page", "0")
-                        .param("size", "10"))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -168,7 +220,8 @@ class UserCardControllerTest extends AbstractControllerTest {
         int cardId = 2;
 
         doThrow(new NotFoundException(String.format(
-                "Карты <%d> для пользователя <%d> не существует", cardId, USER_ID)))
+                "Карты <%d> для пользователя <%d> не существует", cardId, USER_ID)
+        ))
                 .when(cardService).getBalanceByIdAndUserId(cardId, USER_ID);
 
         mockMvc.perform(get("/bank/user/card/balance")

@@ -16,6 +16,6 @@ public class ErrorResponse {
     @Schema(description = "Сообщение об ошибке", example = "Недостаточно средств на карте")
     String message;
 
-    @Schema(description = "Время возникновения ошибки", example = "2023-10-15T12:00:00.000+00:00")
+    @Schema(description = "Время возникновения ошибки", example = "2000-00-00T01:02:30.000+03:00")
     Date timestamp;
 }

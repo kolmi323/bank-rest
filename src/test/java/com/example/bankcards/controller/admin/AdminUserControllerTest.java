@@ -8,6 +8,7 @@ import com.example.bankcards.dto.request.user.ChangeRoleRequest;
 import com.example.bankcards.dto.request.user.DeleteUserRequest;
 import com.example.bankcards.dto.response.user.UserResponse;
 import com.example.bankcards.exception.BadRequestException;
+import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.UserService;
 import com.example.bankcards.util.UserRole;
@@ -72,7 +73,7 @@ class AdminUserControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void grantRole_return400_whenServiceThrowsException() throws Exception {
+    public void grantRole_return400_whenSameRole() throws Exception {
         doThrow(new BadRequestException("Права уже выданы"))
                 .when(userService).grantRole(USER_ID, changeRoleRequest);
 
@@ -94,6 +95,18 @@ class AdminUserControllerTest extends AbstractControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    public void grantRole_return404_whenUserNotFound() throws Exception {
+        doThrow(new NotFoundException("Пользователь не найден"))
+                .when(userService).grantRole(USER_ID, changeRoleRequest);
+
+        mockMvc.perform(post("/bank/admin/user/grant")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(changeRoleRequest)))
+                .andExpect(status().isNotFound());
+    }
+
 
     @Test
     public void revokeRole_return200_whenValid() throws Exception {
@@ -106,6 +119,41 @@ class AdminUserControllerTest extends AbstractControllerTest {
                         .content(objectWriter.writeValueAsString(changeRoleRequest)))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectWriter.writeValueAsString(userResponse)));
+    }
+
+    @Test
+    public void revokeRole_return400_whenRevokeNotExistRole() throws Exception {
+        doThrow(new BadRequestException("Пользователь не имеет роль админа"))
+                .when(userService).revokeRole(USER_ID, changeRoleRequest);
+
+        mockMvc.perform(post("/bank/admin/user/revoke")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(changeRoleRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void revokeRole_return400_whenInvalidBody() throws Exception {
+        ChangeRoleRequest invalid = new ChangeRoleRequest();
+
+        mockMvc.perform(post("/bank/admin/user/revoke")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void revokeRole_return404_whenUserNotFound() throws Exception {
+        doThrow(new NotFoundException("Пользователь не найден"))
+                .when(userService).revokeRole(USER_ID, changeRoleRequest);
+
+        mockMvc.perform(post("/bank/admin/user/revoke")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(changeRoleRequest)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -132,6 +180,28 @@ class AdminUserControllerTest extends AbstractControllerTest {
     }
 
     @Test
+    public void deleteUser_return400_whenInvalidBody() throws Exception {
+        DeleteUserRequest invalid = new DeleteUserRequest();
+
+        mockMvc.perform(delete("/bank/admin/user/delete")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void deleteUser_return404_whenUserNotFound() throws Exception {
+        doThrow(new NotFoundException("Пользователь не найден"))
+                .when(userService).deleteUser(USER_ID, deleteUserRequest);
+        mockMvc.perform(delete("/bank/admin/user/delete")
+                        .with(authentication(authentication))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(deleteUserRequest)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     public void viewUser_return200_withDefaultParams() throws Exception {
         Page<UserResponse> pageResponse = new PageImpl<>(List.of(userResponse));
 
@@ -141,15 +211,5 @@ class AdminUserControllerTest extends AbstractControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().json(objectWriter.writeValueAsString(pageResponse)));
-    }
-
-    @Test
-    public void viewUser_return200_withCustomParams() throws Exception {
-        Page<UserResponse> emptyPage = new PageImpl<>(Collections.emptyList());
-
-        when(userService.getAllUsers(5, 50)).thenReturn(emptyPage);
-
-        mockMvc.perform(get("/bank/admin/user/view"))
-                .andExpect(status().isOk());
     }
 }

@@ -9,6 +9,7 @@ import com.example.bankcards.dto.response.JwtResponse;
 import com.example.bankcards.dto.response.user.UserResponse;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.AuthService;
+import org.aspectj.apache.bcel.classfile.MethodParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,12 +19,12 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -78,6 +79,7 @@ public class AuthControllerTest extends AbstractControllerTest {
     public void register_return400_whenCalledAlreadyExistsEmail() throws Exception {
         doThrow(constraintViolationSQLAlreadyExistException)
                 .when(authService).registerNewUser(validRegisterRequest);
+
         mockMvc.perform(
                         post("/bank/register")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -120,9 +122,18 @@ public class AuthControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void login_return400_whenCalledWithBadCredentials() throws Exception {
-        when(authService.loginUser(any(LoginUserRequest.class)))
-                .thenThrow(new BadCredentialsException("Неверная почта или пароль"));
+    public void login_return400_whenEmailIsInvalid() throws Exception {
+        validLoginRequest.setEmail("email");
+
+        mockMvc.perform(post("/bank/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(validLoginRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void login_return400_whenCalledWithBadEmail() throws Exception {
+        validLoginRequest.setEmail("email");
 
         mockMvc.perform(post("/bank/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -134,7 +145,7 @@ public class AuthControllerTest extends AbstractControllerTest {
     public void login_return400_whenCalledWithEmptyBody() throws Exception {
         mockMvc.perform(post("/bank/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}")) // Пустой JSON нарушает @NotBlank
+                        .content("{}"))
                 .andExpect(status().isBadRequest());
     }
 }

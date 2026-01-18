@@ -8,6 +8,7 @@ import com.example.bankcards.dto.request.card.CreateCardRequest;
 import com.example.bankcards.dto.request.card.DeleteCardRequest;
 import com.example.bankcards.dto.response.card.CardResponse;
 import com.example.bankcards.exception.NotFoundException;
+import com.example.bankcards.exception.SqlOperationException;
 import com.example.bankcards.security.JwtRequestFilter;
 import com.example.bankcards.service.CardService;
 import com.example.bankcards.util.CardStatus;
@@ -96,7 +97,7 @@ class AdminCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void deleteCard_return400_whenServiceThrowsNotFound() throws Exception {
+    public void deleteCard_return404_whenCardNotFound() throws Exception {
         doThrow(new NotFoundException(String.format(
                 "Карты <%d> для пользователя <%d> не существует", cardResponse.getId(), USER_ID)))
                 .when(cardService).deleteByIdAndUserId(deleteCardRequest.getCardId(), deleteCardRequest.getUserId());
@@ -108,7 +109,19 @@ class AdminCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void viewCards_return200_withDefaultParams() throws Exception {
+    public void deleteCard_return500_whenDeleteSeveralCard() throws Exception {
+        doThrow(new SqlOperationException(String.format(
+                "Удаление карты %d пользователя %d провалено", cardResponse.getId(), USER_ID)))
+                .when(cardService).deleteByIdAndUserId(deleteCardRequest.getCardId(), deleteCardRequest.getUserId());
+
+        mockMvc.perform(delete("/bank/admin/card/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectWriter.writeValueAsString(deleteCardRequest)))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    public void viewCards_return200_whenValidRequest() throws Exception {
         when(cardService.getPage(0, 10)).thenReturn(cardPage);
 
         mockMvc.perform(get("/bank/admin/card/view")
@@ -118,19 +131,7 @@ class AdminCardControllerTest extends AbstractControllerTest {
     }
 
     @Test
-    public void filterCardsByStatus_return200_whenStatusProvided() throws Exception {
-        when(cardService.getPageByStatus(CardStatus.BLOCK, 0, 10))
-                .thenReturn(cardPage);
-
-        mockMvc.perform(get("/bank/admin/card/filter/status")
-                        .param("status", "BLOCK")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().json(objectWriter.writeValueAsString(cardPage)));
-    }
-
-    @Test
-    public void filterCardsByStatus_return200_withDefaultStatus() throws Exception {
+    public void filterCardsByStatus_return200_withValidRequest() throws Exception {
         when(cardService.getPageByStatus(CardStatus.ACTIVE, 0, 10))
                 .thenReturn(cardPage);
 
