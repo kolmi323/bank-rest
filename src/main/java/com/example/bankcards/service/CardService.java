@@ -4,6 +4,7 @@ import com.example.bankcards.dto.request.card.CreateCardRequest;
 import com.example.bankcards.dto.response.card.BalanceCardResponse;
 import com.example.bankcards.dto.response.card.CardResponse;
 import com.example.bankcards.entity.CardEntity;
+import com.example.bankcards.exception.BadRequestException;
 import com.example.bankcards.exception.NotFoundException;
 import com.example.bankcards.exception.SqlOperationException;
 import com.example.bankcards.repository.CardRepository;
@@ -77,6 +78,7 @@ public class CardService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateFromCard(int userId, int fromCardId, BigDecimal amount) {
         CardEntity card = handleCardByIdAndUserIdAndBalanceIsGreaterThanEqual(fromCardId, userId, amount);
+        validCardForTransaction(card);
         card.setBalance(card.getBalance().subtract(amount));
         cardRepository.save(card);
     }
@@ -84,6 +86,7 @@ public class CardService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateToCard(int userId, int toCardId, BigDecimal amount) {
         CardEntity card = handleCardByIdAndUserId(toCardId, userId);
+        validCardForTransaction(card);
         card.setBalance(card.getBalance().add(amount));
         cardRepository.save(card);
     }
@@ -110,5 +113,11 @@ public class CardService {
             number = fakerUtils.generateCardNumber();
         }
         return number;
+    }
+
+    private void validCardForTransaction(CardEntity card) {
+        if (card.getStatus() != CardStatus.ACTIVE) {
+            throw new BadRequestException(String.format("карта (%d) недоступна для перевода", card.getId()));
+        }
     }
 }
